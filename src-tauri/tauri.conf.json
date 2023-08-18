@@ -1,0 +1,37 @@
+{
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist",
+    "withGlobalTauri": true
+  },
+  "package": {
+    "productName": "savings-calculator",
+    "version": "0.0.0"
+  },
+  "tauri": {
+    "allowlist": {
+    },
+    "bundle": {
+      "active": true,
+      "targets": "all",
+      "identifier": "savings-calculator",
+      "icon": [
+        "icons/32x32.png"
+      ]
+    },
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "fullscreen": false,
+        "resizable": true,
+        "title": "savings-calculator",
+        "width": 800,
+        "height": 800
+      }
+    ]   
+  }
+}

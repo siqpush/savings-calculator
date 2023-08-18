@@ -1,0 +1,34 @@
+/* CSS */
+div.Data {
+    display: flex;
+    flex-direction: row;
+    align-items: center; 
+  }
+  
+div.Data {
+    flex: .2;
+    overflow: auto; 
+    box-sizing: border-box; /* This ensures padding and borders are included in width calculations */
+  }
+
+div.DataInput {
+    padding-top: 10%;
+}  
+
+div.DataTable {
+  height: 30vh;
+  overflow: scroll;
+  display: flex;
+}
+
+  /* You might also want to style the table for better readability */
+  .container .DataTable table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .container .DataTable th, .container .DataTable td {
+    border: 1px solid #ddd;
+    padding: 1px;
+    font-size: 14px;
+  }
