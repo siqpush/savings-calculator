@@ -15,7 +15,7 @@ function App() {
   const [mortgageOutstanding, setMortgageOutstanding] = useState(0);
   const [minBaselineRetirementIncome, setMinBaselineRetirementIncome] = useState(4000);
   const [maxBaselineRetirementIncome, setMaxBaselineRetirementIncome] = useState(8000);
-  const [recalculate, setRecalculate] = useState(false);
+  const [recalculate, setRecalculate] = useState(true);
   const [inflationRates, setInflationRates] = useState([] as number[]);
   const [interestRates, setInterestRates] = useState([] as number[]);
   const [savings, setSavings] = useState([] as number[]);

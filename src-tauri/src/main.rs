@@ -119,12 +119,10 @@ fn get_savings(
 }
 
 fn main() {
-    let interest_rates = Interest::default();
-    let inflation_rates = Inflation::default();
 
     tauri::Builder::default()
-        .manage(interest_rates)
-        .manage(inflation_rates)
+        .manage(Interest::default())
+        .manage(Inflation::default())
         .invoke_handler(tauri::generate_handler![
             get_savings,
             get_inflation_rates,
