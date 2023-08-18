@@ -11,8 +11,7 @@
     "version": "0.0.0"
   },
   "tauri": {
-    "allowlist": {
-    },
+    "allowlist": {},
     "bundle": {
       "active": true,
       "targets": "all",

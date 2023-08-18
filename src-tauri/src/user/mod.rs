@@ -15,7 +15,6 @@ pub struct Saver {
     pub monthly_mortgage_payment: f32,
     pub min_baseline_retirement_income: f32,
     pub max_baseline_retirement_income: f32,
-    pub recalculate: bool
 }
 
 impl Saver {
@@ -28,7 +27,6 @@ impl Saver {
         mortgage_debt: f32,
         min_baseline_retirement_income: f32,
         max_baseline_retirement_income: f32,
-        recalculate: bool,
     ) -> Saver {
         Saver {
             current_age,
@@ -42,7 +40,6 @@ impl Saver {
                 / ((1.0 + MORTGAGE_RATE_MONTHLY).powf(MORTGAGE_MONTHS) - 1.0),
             min_baseline_retirement_income,
             max_baseline_retirement_income,
-            recalculate,
         }
     }
 
@@ -84,11 +81,10 @@ impl Saver {
     }
 
     // monthly savings are annualized, post retirement you only withdrawal
-    pub fn calculate_annual_savings(&mut self, infl_rate: f32) -> f32 {
+    pub fn calculate_annual_savings(&mut self, infl_rate: f32, age: u8) -> f32 {
 
         let annual_savings: f32;
-
-        if self.current_age >= self.retirement_age {
+        if age >= self.retirement_age {
             if self.min_baseline_retirement_income < self.total_savings * WITHDRAWAL_RATE / 12.0
                 && self.max_baseline_retirement_income > self.total_savings * WITHDRAWAL_RATE / 12.0
             {
@@ -119,7 +115,7 @@ impl Saver {
                 match &self.total_savings 
                 + self.calculate_annual_earnings(interest_rates[age as usize], infl_rates[age as usize])
                 - self.calculate_annual_expenses()
-                + self.calculate_annual_savings(infl_rates[age as usize]) 
+                + self.calculate_annual_savings(infl_rates[age as usize], age as u8) 
                 {
                      num if num >= 0.0 => {
                         display_savings.push(num);
@@ -128,10 +124,8 @@ impl Saver {
                      _ => {
                         display_savings.push(0.0)
                     },
-
                 };
             }
-            self.current_age += 1;
         }
         display_savings
     }

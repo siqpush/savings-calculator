@@ -24,9 +24,9 @@ export function Input(props: InputProps)  {
     }
 
     return (
-        <div>
+        <div className="buttons-container">
             {props.label}
-            <button type="button" onClick={() => handleIncrementClick(1)}>+</button>
+            <button className="button-arounder" type="button" onClick={() => handleIncrementClick(1)}>+</button>
             {props.value.toLocaleString()}
             <button type="button" onClick={() => handleIncrementClick(-1)}>-</button>
         </div>

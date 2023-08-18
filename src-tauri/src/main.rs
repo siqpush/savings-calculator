@@ -1,10 +1,13 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use serde::Serialize;
+use std::collections::HashMap;
 use std::default::Default;
 use std::env;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::vec;
 use rand::distributions::WeightedIndex;
 use rand::prelude::Distribution;
 use rand::thread_rng;
@@ -13,6 +16,13 @@ mod user;
 
 // 0 to Death Age for time results
 pub const DEATH_AGE: usize = 100;
+
+
+#[derive(Serialize)]
+struct ZeroDistribution {
+    age: Vec<u8>,
+    count: Vec<u16>,
+}
 
 trait Rates {
     fn get_random_rates() -> Vec<f32>;
@@ -75,7 +85,7 @@ fn get_inflation_rates(recalc: bool, state: tauri::State<'_, Inflation>) -> Vec<
     if recalc {
         state.0.lock().unwrap().clone_from(&Inflation::get_random_rates());
     }
-    state.0.lock().unwrap().to_vec()
+    state.0.lock().unwrap().clone()
 }
 
 #[tauri::command]
@@ -83,7 +93,7 @@ fn get_interest_rates(recalc: bool, state: tauri::State<'_, Interest>) -> Vec<f3
     if recalc {
         state.0.lock().unwrap().clone_from(&Interest::get_random_rates());
     }
-    state.0.lock().unwrap().to_vec()
+    state.0.lock().unwrap().clone()
 }
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -97,7 +107,6 @@ fn get_savings(
     mortgageoutstanding: f32,
     minbaselineretirementincome: f32,
     maxbaselineretirementincome: f32,
-    recalculate: bool,
     inflationrates: tauri::State<'_, Inflation>,
     interestrates: tauri::State<'_, Interest>,
 ) -> Vec<f32> {
@@ -110,13 +119,63 @@ fn get_savings(
             mortgageoutstanding,
             minbaselineretirementincome,
             maxbaselineretirementincome,
-            recalculate,
         );
         user.apply_annual_changes(
-            inflationrates.0.lock().unwrap().to_vec(),
-             interestrates.0.lock().unwrap().to_vec()
+            inflationrates.0.lock().unwrap().clone(),
+             interestrates.0.lock().unwrap().clone()
         )
-}
+    }
+
+#[tauri::command]
+fn get_zero_distributions(
+        currentage: u8,
+        retirementage: u8,
+        monthlysavings: f32,
+        homevalue: f32,
+        totalsavings: f32,
+        mortgageoutstanding: f32,
+        minbaselineretirementincome: f32,
+        maxbaselineretirementincome: f32,
+    ) -> ZeroDistribution {
+
+            let mut age_zero_distribution: HashMap<u8, u16> = HashMap::new();
+            let mut zd: ZeroDistribution = ZeroDistribution { age: vec![], count: vec![] };
+
+            for _ in 0..1000 {
+                let mut user = Saver::new(
+                    currentage,
+                    retirementage,
+                    monthlysavings,
+                    homevalue,
+                    totalsavings,
+                    mortgageoutstanding,
+                    minbaselineretirementincome,
+                    maxbaselineretirementincome,
+                );
+                let res = user.apply_annual_changes(
+                    Inflation::get_random_rates(),
+                    Interest::get_random_rates()
+                );
+
+                for i in (0..=res.len() - 1).rev() {
+                    if res[i] != 0.0 {
+                        if age_zero_distribution.contains_key(&(i as u8)) {
+                            *age_zero_distribution.get_mut(&(i as u8)).unwrap() += 1;
+                        } else {
+                            age_zero_distribution.insert(i as u8, 1);
+                        };
+                        break;
+                    }
+                }
+
+            }
+            for (key, value) in age_zero_distribution.iter() {
+                zd.age.push(*key);
+                zd.count.push(*value);
+            }
+
+            zd
+        }
 
 fn main() {
 
@@ -125,6 +184,7 @@ fn main() {
         .manage(Inflation::default())
         .invoke_handler(tauri::generate_handler![
             get_savings,
+            get_zero_distributions,
             get_inflation_rates,
             get_interest_rates,
         ])

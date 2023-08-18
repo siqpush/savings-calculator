@@ -1,70 +1,127 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
-import { PlotData } from "./components/plot";
+import { PlotData } from "./components/plots/plot";
 import { Input } from "./components/input";
+import { BarPlotData } from "./components/plots/barplot";
 
+
+interface zeroDistributionsType {
+  age: number[];
+  count: number[];
+}
 
 function App() {
 
-  const [currentAge, setCurrentAge] = useState(0);
+
+  const [currentAge, setCurrentAge] = useState(30);
   const [retirementAge, setRetirementAge] = useState(60);
-  const [totalSavings, setTotalSavings] = useState(100000);
+  const [totalSavings, setTotalSavings] = useState(1000000);
   const [monthlySavings, setMonthlySavings] = useState(0); 
-  const [homeValue, setHomeValue] = useState(0);
-  const [mortgageOutstanding, setMortgageOutstanding] = useState(0);
-  const [minBaselineRetirementIncome, setMinBaselineRetirementIncome] = useState(4000);
+  const [homeValue, setHomeValue] = useState(250000);
+  const [mortgageOutstanding, setMortgageOutstanding] = useState(100000);
+  const [minBaselineRetirementIncome, setMinBaselineRetirementIncome] = useState(5000);
   const [maxBaselineRetirementIncome, setMaxBaselineRetirementIncome] = useState(8000);
-  const [recalculate, setRecalculate] = useState(true);
+  const [recalculate, setRecalculate] = useState(true);  
   const [inflationRates, setInflationRates] = useState([] as number[]);
   const [interestRates, setInterestRates] = useState([] as number[]);
   const [savings, setSavings] = useState([] as number[]);
+  const [updateYAxis, setUpdateYAxis] = useState(10000000);
+  const [zeroDistributions, setZeroDistributions] = useState({} as zeroDistributionsType);
+  const [isPlotVisible, setIsPlotVisible] = useState(true);
+
   const handleValueChange = (newValue: number, setStateFunction: React.Dispatch<React.SetStateAction<number>>) => 
   {
     setStateFunction(newValue);
-    getSavings();
+    
   };
-  const validateRetirementInput = (min: number, max: number) => {
-    if (min > max) {
-      setMaxBaselineRetirementIncome(min);
-    } else if (max < min) {
-      setMinBaselineRetirementIncome(max);
+
+  const validateRetirementInput = () => {
+    if (minBaselineRetirementIncome > maxBaselineRetirementIncome) {
+      setMaxBaselineRetirementIncome(minBaselineRetirementIncome);
+    } else if (maxBaselineRetirementIncome < minBaselineRetirementIncome) {
+      setMinBaselineRetirementIncome(maxBaselineRetirementIncome);
     }
   }
 
-  useEffect(() => {
-    getSavings();
-  }, []);
+  const validateMortgage = () => {
+    if (totalSavings < homeValue) {
+      setMortgageOutstanding(homeValue - totalSavings);
+    } else if (mortgageOutstanding > homeValue) {
+      setMortgageOutstanding(homeValue);
+    } else {
 
+    }
+  }
+
+  async function getInterestRates() {
+    setInterestRates(await invoke ("get_interest_rates", {recalc: recalculate}));
+  }
+
+  async function getInflationRates() {
+    setInflationRates(await invoke ("get_inflation_rates", {recalc: recalculate}));
+  }
+
+  useEffect(() => {
+    if (recalculate) {
+      getInterestRates();
+      getInflationRates();
+
+      // only update the y-axis if user recalculates
+      let max = Math.max(...savings);
+      if (max >= 100000000) {
+        setUpdateYAxis(1000000000);
+      } else if (max >= 10000000) {
+        setUpdateYAxis(100000000);
+      } else if (max >= 7500000) {
+        setUpdateYAxis(10000000);
+      } else if (max >= 5000000) {
+        setUpdateYAxis(7500000);
+      } else {
+        setUpdateYAxis(5000000);
+      }
+      // reset recalculate to false
+      setRecalculate(false);
+    }
+    getSavings();
+  }, [currentAge, retirementAge, totalSavings, monthlySavings, homeValue, mortgageOutstanding, minBaselineRetirementIncome, maxBaselineRetirementIncome, recalculate]);
+  
   async function getSavings() {
 
-    validateRetirementInput(minBaselineRetirementIncome, maxBaselineRetirementIncome);
+    validateRetirementInput();
+    validateMortgage();
 
-    try {
+    setSavings(await invoke("get_savings", {
+      currentage: currentAge, 
+      retirementage: retirementAge,
+      totalsavings: totalSavings,
+      monthlysavings: monthlySavings,
+      homevalue: homeValue,
+      mortgageoutstanding: mortgageOutstanding,
+      minbaselineretirementincome: minBaselineRetirementIncome,
+      maxbaselineretirementincome: maxBaselineRetirementIncome,
+      inflationRates: inflationRates,
+      interestRates: interestRates,
+    }));
+  }
 
-      setInterestRates(await invoke ("get_interest_rates", {recalc: recalculate}));
-      setInflationRates(await invoke ("get_inflation_rates", {recalc: recalculate}));
-      if (inflationRates.length === 0 || interestRates.length === 0) {
-        return;
-      }
+  async function getZeroDistributions() {
 
-      setSavings(await invoke("get_savings", {
-        currentage: currentAge, 
-        retirementage: retirementAge,
-        totalsavings: totalSavings,
-        monthlysavings: monthlySavings,
-        homevalue: homeValue,
-        mortgageoutstanding: mortgageOutstanding,
-        minbaselineretirementincome: minBaselineRetirementIncome,
-        maxbaselineretirementincome: maxBaselineRetirementIncome,
-        recalculate: recalculate,
-        inflationRates: inflationRates,
-        interestRates: interestRates,
-      }));
-      
-    } catch (error) {
-      console.log(error);
-    };
+    validateRetirementInput();
+    validateMortgage();
+
+    setZeroDistributions(await invoke("get_zero_distributions", {
+      currentage: currentAge, 
+      retirementage: retirementAge,
+      totalsavings: totalSavings,
+      monthlysavings: monthlySavings,
+      homevalue: homeValue,
+      mortgageoutstanding: mortgageOutstanding,
+      minbaselineretirementincome: minBaselineRetirementIncome,
+      maxbaselineretirementincome: maxBaselineRetirementIncome,
+    }));
+
+    setIsPlotVisible(!isPlotVisible);
   }
 
   return (
@@ -111,32 +168,42 @@ function App() {
             <Input 
                 label="Mortgage" 
                 value={mortgageOutstanding}
-                multiplier={250000} 
+                multiplier={100000} 
                 onValueChange={(newValue: number) => handleValueChange(newValue, setMortgageOutstanding)} 
               />
             <Input 
-                label="Retirement Income Min." 
+                label="Min Monthly Retirement Income" 
                 value={minBaselineRetirementIncome}
                 multiplier={1000} 
                 onValueChange={(newValue: number) => handleValueChange(newValue, setMinBaselineRetirementIncome)} 
               />
               <Input 
-                label="Retirement Income Max." 
+                label="Max Monthly Retirement Income"  
                 value={maxBaselineRetirementIncome}
                 multiplier={1000} 
                 onValueChange={(newValue: number) => handleValueChange(newValue, setMaxBaselineRetirementIncome)} 
               />
-              <div>
-                <label>Generate Rates</label>
-                <input type="checkbox" checked={recalculate} onChange={(e) => {console.log(e.target.checked), setRecalculate(e.target.checked)}} />
-              </div>
           </form>
         </div>
-      <div className="Plot">
-          <PlotData retirementage={retirementAge} savings={savings}>
-          </PlotData>
+        <div className="Plot">
+          <div className="savingsPlot">
+            <PlotData retirementage={retirementAge} savings={savings} yMax={updateYAxis}></PlotData>
+          </div>
+            <div className="zeroDistributionsPlot">
+            <BarPlotData age={zeroDistributions.age} count={zeroDistributions.count}></BarPlotData>
+          </div>
         </div>
       </div>
+        <div className="refresh-buttons">
+          <div>
+            <label>Generate New Rates</label>
+              <button className="button-arounder-big" type="submit" onClick={() => (setRecalculate(true))}>X</button>
+          </div>
+          <div>
+                    <label>Recalculate Distribution</label>
+              <button className="button-arounder-big" type="submit" onClick={getZeroDistributions}>X</button>
+          </div>
+        </div>
       <div className="DataTable">
           <table>
               <thead>
@@ -149,13 +216,15 @@ function App() {
                   </tr>
               </thead>
               <tbody>
-                {savings.map((_, index) => (
-                  <tr key={index}>
-                    <td>{index}</td>
-                    <td>{(interestRates[index]*100).toFixed(1)}%</td>
-                    <td>{(inflationRates[index]*100).toFixed(1)}%</td>
-                    <td>{savings[index].toLocaleString("en-US", { style: "currency", currency: "USD" })}</td>
-                  </tr>
+                {savings.map((i, j) => (
+                  i !== 0 ? (
+                    <tr key={j}>
+                      <td>{j}</td>
+                      <td>{(interestRates[j]*100).toFixed(1)}%</td>
+                      <td>{(inflationRates[j]*100).toFixed(1)}%</td>
+                      <td>{i.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                    </tr>
+                  ) : null
                 ))}
               </tbody>
           </table>
