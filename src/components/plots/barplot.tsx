@@ -26,14 +26,14 @@ export function BarPlotData(props: BarPlotDataProps) {
                 b: 30   // adjust as needed
               },
             xaxis: {
-                range: [0, 100],
+                range: [40, 100],
                 type: 'linear',
                 linewidth: 1,
               },
                 yaxis: {
                 position: 0,
-                range: [0, 3],
-                type: 'log',
+                range: [0, 1000],
+                type: 'linear',
                 },
         } }
         />

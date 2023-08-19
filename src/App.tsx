@@ -195,11 +195,11 @@ function App() {
         </div>
       </div>
         <div className="refresh-buttons">
-          <div>
+          <div className="new-rates-refresh-button">
             <label>Generate New Rates</label>
               <button className="button-arounder-big" type="submit" onClick={() => (setRecalculate(true))}>X</button>
           </div>
-          <div>
+          <div className="zero-distribution-button">
                     <label>Recalculate Distribution</label>
               <button className="button-arounder-big" type="submit" onClick={getZeroDistributions}>X</button>
           </div>

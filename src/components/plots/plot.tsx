@@ -24,8 +24,8 @@ export function PlotData(props: PlotDataProps) {
             width: 600,
             height: 200,
             margin: {
-                t: 0,  // adjust as needed
-                b: 80   // adjust as needed
+                t: 10,  // adjust as needed
+                b: 60   // adjust as needed
               },
             xaxis: {
                 range: [-5, props.savings.length],
@@ -33,7 +33,7 @@ export function PlotData(props: PlotDataProps) {
                 linewidth: 1,
               },
                 yaxis: {
-                scaleratio: 4,
+   
                 position: 0,
                 range: [0, props.yMax],
                 rangeslider: {range: [0, props.yMax]},
@@ -44,7 +44,7 @@ export function PlotData(props: PlotDataProps) {
                 x0: props.retirementage,
                 y0: 0,
                 x1: props.retirementage,
-                y1: props.yMax * .9,
+                y1: props.yMax * .8,
                 line: {
                     color: 'blue',
                     width: 1,
