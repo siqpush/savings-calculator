@@ -2,7 +2,7 @@
 
 .container {
   font-family: Georgia, 'Times New Roman', Times, serif;
-  font-size: 16px;
+  font-size: 14px;
   ;
 }
 
@@ -17,12 +17,10 @@ div.Data {
 }
 
 div.savingsPlot {
-  margin: 0;
-  margin-bottom: -10%;
+  margin: 5%;
   }
   div.zeroDistributionsPlot {
-    margin: 0;
-    margin-top: -10%;
+    margin: 5%;
   }
 
 div.DataTable {

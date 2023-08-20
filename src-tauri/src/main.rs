@@ -1,10 +1,10 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use rand::Rng;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::default::Default;
-use std::env;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::vec;
@@ -17,11 +17,12 @@ mod user;
 // 0 to Death Age for time results
 pub const DEATH_AGE: usize = 100;
 
-
 #[derive(Serialize)]
 struct ZeroDistribution {
     age: Vec<u8>,
     count: Vec<u16>,
+    avg: f32,
+    stdv: f32,
 }
 
 trait Rates {
@@ -35,13 +36,15 @@ impl Default for Interest {
 }
 impl Rates for Interest {
     fn get_random_rates() -> Vec<f32> {
-        let weights = [20.0, 10.0, 2.0, 1.0, 3.0, 2.0, 12.0, 3.0, 8.0, 3.0, 1.0];
-        let choices = [7.0, 10.0, 15.0, -5.0, -1.0, 3.0, 6.0, 2.0, -0.4, -21.0, 30.0];
-        let dist = WeightedIndex::new(&weights).unwrap();
         let mut rng = thread_rng();
         let mut values: Vec<f32> = vec![0.0; DEATH_AGE];
         for i in 0..DEATH_AGE {
-            values[i] = choices[dist.sample(&mut rng)] / 100.0;
+            match i {
+                0..=49 => {values[i] = rng.gen_range(-0.2..0.2) + 0.07},
+                50..=64 => {values[i] = rng.gen_range(-0.075..0.10) + 0.035},
+                _ => {values[i] = rng.gen_range(-0.0375..0.075) + 0.017675},
+            }
+            
         }
         values
     }
@@ -68,17 +71,43 @@ impl Default for Age {
 }
 impl Rates for Inflation {
     fn get_random_rates() -> Vec<f32> {
-        let weights = [10.0, 5.0, 2.0, 1.0, 1.0];
-        let choices = [3.0, 2.0, 4.0, -1.0, 8.0];
+        let weights = [1.0, 1.0, 1.0, 2.0, 1.0, 60.0, 90.0, 70.0, 70.0, 50.0, 20.0, 6.0, 1.0, 3.0, 2.0, 2.0, 1.0, 1.0];
+        let choices = [-0.1, -0.09, -0.06, -0.02, 0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.13, 0.14, 0.19];
         let dist = WeightedIndex::new(&weights).unwrap();
         let mut rng = thread_rng();
         let mut values: Vec<f32> = vec![0.0; DEATH_AGE];
         for i in 0..DEATH_AGE {
-            values[i] = choices[dist.sample(&mut rng)] / 100.0;
+            values[i] = choices[dist.sample(&mut rng)];
         }
         values
     }
 }
+
+fn mean(data: &[f32]) -> Option<f32> {
+    let sum = data.iter().sum::<f32>() as f32;
+    let count = data.len();
+
+    match count {
+        positive if positive > 0 => Some(sum / count as f32),
+        _ => None,
+    }
+}
+
+fn std_deviation(data: &[f32]) -> Option<f32> {
+    match (mean(data), data.len()) {
+        (Some(data_mean), count) if count > 0 => {
+            let variance = data.iter().map(|value| {
+                let diff = data_mean - (*value as f32);
+
+                diff * diff
+            }).sum::<f32>() / count as f32;
+
+            Some(variance.sqrt())
+        },
+        _ => None
+    }
+}
+
 
 #[tauri::command]
 fn get_inflation_rates(recalc: bool, state: tauri::State<'_, Inflation>) -> Vec<f32> {
@@ -121,8 +150,8 @@ fn get_savings(
             maxbaselineretirementincome,
         );
         user.apply_annual_changes(
-            inflationrates.0.lock().unwrap().clone(),
-             interestrates.0.lock().unwrap().clone()
+            &inflationrates.0.lock().unwrap().clone(),
+             &interestrates.0.lock().unwrap().clone()
         )
     }
 
@@ -139,9 +168,11 @@ fn get_zero_distributions(
     ) -> ZeroDistribution {
 
             let mut age_zero_distribution: HashMap<u8, u16> = HashMap::new();
-            let mut zd: ZeroDistribution = ZeroDistribution { age: vec![], count: vec![] };
-
-            for _ in 0..1000 {
+            let mut zd: ZeroDistribution = ZeroDistribution { age: vec![], count: vec![], avg: 0.0, stdv: 0.0 };
+            let mut avg: f32 = 0.0;
+            let mut stdv: f32 = 0.0;
+            let iter_count = 1000.0;
+            for _ in 0..iter_count as usize {
                 let mut user = Saver::new(
                     currentage,
                     retirementage,
@@ -152,17 +183,28 @@ fn get_zero_distributions(
                     minbaselineretirementincome,
                     maxbaselineretirementincome,
                 );
+                let inflation_rates = Inflation::get_random_rates();
+                let interest_rates = Interest::get_random_rates();
                 let res = user.apply_annual_changes(
-                    Inflation::get_random_rates(),
-                    Interest::get_random_rates()
+                    &inflation_rates,
+                    &interest_rates
                 );
-
+                
                 for i in (0..=res.len() - 1).rev() {
                     if res[i] != 0.0 {
                         if age_zero_distribution.contains_key(&(i as u8)) {
                             *age_zero_distribution.get_mut(&(i as u8)).unwrap() += 1;
                         } else {
                             age_zero_distribution.insert(i as u8, 1);
+                        };
+                        avg = avg + match mean(&interest_rates[currentage as usize..i]){
+                            Some(num) => num,
+                            None => continue
+                        };
+                        
+                        stdv = stdv + match std_deviation(&interest_rates[currentage as usize..i]){
+                            Some(num) => num,
+                            None => continue
                         };
                         break;
                     }
@@ -173,7 +215,8 @@ fn get_zero_distributions(
                 zd.age.push(*key);
                 zd.count.push(*value);
             }
-
+            zd.avg = avg / iter_count;
+            zd.stdv = stdv / iter_count;
             zd
         }
 

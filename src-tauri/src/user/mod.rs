@@ -106,7 +106,7 @@ impl Saver {
         annual_savings
     }
 
-    pub fn apply_annual_changes(&mut self, infl_rates: Vec<f32>, interest_rates: Vec<f32>) -> Vec<f32> {
+    pub fn apply_annual_changes(&mut self, infl_rates: &Vec<f32>, interest_rates: &Vec<f32>) -> Vec<f32> {
         let mut display_savings: Vec<f32> = Vec::new();
         for age in 0..interest_rates.len() {
             if age < self.current_age as usize {

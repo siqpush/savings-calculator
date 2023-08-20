@@ -9,6 +9,8 @@ import { BarPlotData } from "./components/plots/barplot";
 interface zeroDistributionsType {
   age: number[];
   count: number[];
+  avg: number;
+  stdv: number;
 }
 
 function App() {
@@ -33,7 +35,6 @@ function App() {
   const handleValueChange = (newValue: number, setStateFunction: React.Dispatch<React.SetStateAction<number>>) => 
   {
     setStateFunction(newValue);
-    
   };
 
   const validateRetirementInput = () => {
@@ -120,7 +121,7 @@ function App() {
       minbaselineretirementincome: minBaselineRetirementIncome,
       maxbaselineretirementincome: maxBaselineRetirementIncome,
     }));
-
+    console.log(zeroDistributions.avg);
     setIsPlotVisible(!isPlotVisible);
   }
 
@@ -190,7 +191,7 @@ function App() {
             <PlotData retirementage={retirementAge} savings={savings} yMax={updateYAxis}></PlotData>
           </div>
             <div className="zeroDistributionsPlot">
-            <BarPlotData age={zeroDistributions.age} count={zeroDistributions.count}></BarPlotData>
+            <BarPlotData age={zeroDistributions.age} count={zeroDistributions.count} avg={zeroDistributions.avg} std={zeroDistributions.stdv}></BarPlotData>
           </div>
         </div>
       </div>
