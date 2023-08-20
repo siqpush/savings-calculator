@@ -11,16 +11,19 @@ div.Data {
     display: flex;
     flex-direction: row;
     align-items: center; 
-    flex: 1;
-    overflow: auto; 
+    overflow-anchor: auto;
     box-sizing: border-box; /* This ensures padding and borders are included in width calculations */
 }
 
 div.savingsPlot {
-  margin: 5%;
+  margin-top: 2.5%;
+  margin-left: 2.5%;
+  margin-bottom: 2.5%;
   }
   div.zeroDistributionsPlot {
-    margin: 5%;
+    margin-top: 2.5%;
+    margin-left: 2.5%;
+    margin-bottom: 2.5%;
   }
 
 div.DataTable {
@@ -32,8 +35,7 @@ div.DataTable {
 div.refresh-buttons {
   display: flex;
   flex-direction: row;
-  padding-left: 20%;
-  padding-right: 20%;
+  padding-left: 40%;
 }
 
 div.new-rates-refresh-buttons button {
@@ -105,32 +107,4 @@ button {
   border-top-right-radius: var(--radius);
   border-bottom-left-radius: var(--radius);
   border-bottom-right-radius: var(--radius);
-}
-
-
-.button-arounder-big {
-
-  font-size: 1rem;
-  background: hsl(190deg, 30%, 15%);
-  color: hsl(190deg, 10%, 95%);
-  
-  box-shadow: 0 0px 0px hsla(190deg, 15%, 5%, .2);
-  transform: translateY(0);
-  border-top-left-radius: 0px;
-  border-top-right-radius: 0px;
-  border-bottom-left-radius: 0px;
-  border-bottom-right-radius: 0px;
-  
-  --dur: .15s;
-  --delay: .15s;
-  --radius: 12px;
-  
-  transition:
-    border-top-left-radius var(--dur) var(--delay) ease-out,
-    border-top-right-radius var(--dur) calc(var(--delay) * 2) ease-out,
-    border-bottom-right-radius var(--dur) calc(var(--delay) * 3) ease-out,
-    border-bottom-left-radius var(--dur) calc(var(--delay) * 4) ease-out,
-    box-shadow calc(var(--dur) * 4) ease-out,
-    transform calc(var(--dur) * 4) ease-out,
-    background calc(var(--dur) * 4) steps(4, jump-end);
 }

@@ -74,9 +74,9 @@ impl Saver {
     }
 
     // Interest Rates - Inflation
-    pub fn calculate_annual_earnings(&self, interest_rate: f32, inflation_rate: f32) -> f32 {   
+    pub fn calculate_annual_earnings(&self, interest_rate: f32) -> f32 {   
         let investible_assets = self.get_investible_assets();
-        let earnings = investible_assets * interest_rate - investible_assets * inflation_rate;
+        let earnings = investible_assets * interest_rate;
         earnings
     }
 
@@ -85,24 +85,32 @@ impl Saver {
 
         let annual_savings: f32;
         if age >= self.retirement_age {
+            
             if self.min_baseline_retirement_income < self.total_savings * WITHDRAWAL_RATE / 12.0
                 && self.max_baseline_retirement_income > self.total_savings * WITHDRAWAL_RATE / 12.0
             {
                 self.monthly_savings = -1.0 * (self.total_savings * WITHDRAWAL_RATE / 12.0)
-            } else if self.min_baseline_retirement_income
-                > self.total_savings * WITHDRAWAL_RATE / 12.0
+
+            } 
+
+            else if self.min_baseline_retirement_income > self.total_savings * WITHDRAWAL_RATE / 12.0
             {
                 self.monthly_savings = -1.0 * self.min_baseline_retirement_income;
-            } else {
+            } 
+
+            else 
+            {
                 self.monthly_savings = -1.0 * self.max_baseline_retirement_income;
             }
+
             annual_savings = self.monthly_savings * 12.0;
+            self.monthly_savings = self.monthly_savings * (1.0 + infl_rate);
+
         } else {
             annual_savings = self.monthly_savings * 12.0;
+            self.monthly_savings = self.monthly_savings * (1.0 - infl_rate);
         }
-        self.monthly_savings = self.monthly_savings * (1.0 + infl_rate);
-        self.min_baseline_retirement_income = self.min_baseline_retirement_income * (1.0 + infl_rate);
-        self.max_baseline_retirement_income = self.max_baseline_retirement_income * (1.0 + infl_rate);
+        
         annual_savings
     }
 
@@ -112,10 +120,11 @@ impl Saver {
             if age < self.current_age as usize {
                 display_savings.push(0.0);
             } else {
-                match &self.total_savings 
-                + self.calculate_annual_earnings(interest_rates[age as usize], infl_rates[age as usize])
+                match self.total_savings 
                 - self.calculate_annual_expenses()
-                + self.calculate_annual_savings(infl_rates[age as usize], age as u8) 
+                + self.calculate_annual_savings(infl_rates[age as usize], age as u8)
+                + self.calculate_annual_earnings(interest_rates[age as usize])
+                 
                 {
                      num if num >= 0.0 => {
                         display_savings.push(num);

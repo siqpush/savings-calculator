@@ -16,14 +16,14 @@ interface zeroDistributionsType {
 function App() {
 
 
-  const [currentAge, setCurrentAge] = useState(30);
-  const [retirementAge, setRetirementAge] = useState(60);
-  const [totalSavings, setTotalSavings] = useState(1000000);
+  const [currentAge, setCurrentAge] = useState(35);
+  const [retirementAge, setRetirementAge] = useState(67);
+  const [totalSavings, setTotalSavings] = useState(100000);
   const [monthlySavings, setMonthlySavings] = useState(0); 
-  const [homeValue, setHomeValue] = useState(250000);
-  const [mortgageOutstanding, setMortgageOutstanding] = useState(100000);
+  const [homeValue, setHomeValue] = useState(0);
+  const [mortgageOutstanding, setMortgageOutstanding] = useState(0);
   const [minBaselineRetirementIncome, setMinBaselineRetirementIncome] = useState(5000);
-  const [maxBaselineRetirementIncome, setMaxBaselineRetirementIncome] = useState(8000);
+  const [maxBaselineRetirementIncome, setMaxBaselineRetirementIncome] = useState(5000);
   const [recalculate, setRecalculate] = useState(true);  
   const [inflationRates, setInflationRates] = useState([] as number[]);
   const [interestRates, setInterestRates] = useState([] as number[]);
@@ -198,22 +198,21 @@ function App() {
         <div className="refresh-buttons">
           <div className="new-rates-refresh-button">
             <label>Generate New Rates</label>
-              <button className="button-arounder-big" type="submit" onClick={() => (setRecalculate(true))}>X</button>
+              <button className="button-arounder" type="submit" onClick={() => (setRecalculate(true))}>X</button>
           </div>
           <div className="zero-distribution-button">
                     <label>Recalculate Distribution</label>
-              <button className="button-arounder-big" type="submit" onClick={getZeroDistributions}>X</button>
+              <button className="button-arounder" type="submit" onClick={getZeroDistributions}>X</button>
           </div>
         </div>
       <div className="DataTable">
           <table>
               <thead>
                   <tr>
-                    
                       <th>Age</th>
                       <th>Interest</th>
                       <th>Inflation</th>
-                      <th>Interest Income</th>
+                      <th>Networth</th>
                   </tr>
               </thead>
               <tbody>

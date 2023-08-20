@@ -40,9 +40,10 @@ impl Rates for Interest {
         let mut values: Vec<f32> = vec![0.0; DEATH_AGE];
         for i in 0..DEATH_AGE {
             match i {
-                0..=49 => {values[i] = rng.gen_range(-0.2..0.2) + 0.07},
-                50..=64 => {values[i] = rng.gen_range(-0.075..0.10) + 0.035},
-                _ => {values[i] = rng.gen_range(-0.0375..0.075) + 0.017675},
+                0..=29 => {values[i] = rng.gen_range(-0.2..0.2) + 0.07;},
+                30..=49 => {values[i] = rng.gen_range(-0.10..0.15) + 0.05;},
+                50..=64 => {values[i] = rng.gen_range(-0.075..0.10) + 0.035;},
+                _ => {values[i] = rng.gen_range(-0.0375..0.075) + 0.017675;},
             }
             
         }

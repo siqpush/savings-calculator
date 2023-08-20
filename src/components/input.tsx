@@ -28,7 +28,7 @@ export function Input(props: InputProps)  {
             {props.label}
             <button className="button-arounder" type="button" onClick={() => handleIncrementClick(1)}>+</button>
             {props.value.toLocaleString()}
-            <button type="button" onClick={() => handleIncrementClick(-1)}>-</button>
+            <button className="button-arounder" type="button" onClick={() => handleIncrementClick(-1)}>-</button>
         </div>
     )
 }
