@@ -1,18 +1,20 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use rand::Rng;
+
+use rand::prelude::Distribution;
+
+
 use serde::Serialize;
-use user::savings;
-use std::collections::HashMap;
+
 use std::default::Default;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::thread;
 use std::vec;
-use rand::distributions::WeightedIndex;
-use rand::prelude::Distribution;
-use rand::thread_rng;
+
 mod user;
+use crate::user::rates::{Inflation, Interest};
 
 // 0 to Death Age for time results
 pub const DEATH_AGE: usize = 100;
@@ -24,9 +26,6 @@ struct ZeroDistribution {
     avg: f32,
     stdv: f32,
 }
-
-
-
 
 pub struct Savings(Arc<Mutex<Vec<f32>>>);
 impl Default for Savings {
@@ -42,9 +41,8 @@ impl Default for Age {
     }
 }
 
-
 fn mean(data: &[f32]) -> Option<f32> {
-    let sum = data.iter().sum::<f32>() as f32;
+    let sum = data.iter().sum::<f32>();
     let count = data.len();
 
     match count {
@@ -56,65 +54,51 @@ fn mean(data: &[f32]) -> Option<f32> {
 fn std_deviation(data: &[f32]) -> Option<f32> {
     match (mean(data), data.len()) {
         (Some(data_mean), count) if count > 0 => {
-            let variance = data.iter().map(|value| {
-                let diff = data_mean - (*value as f32);
+            let variance = data
+                .iter()
+                .map(|value| {
+                    let diff = data_mean - *value;
 
-                diff * diff
-            }).sum::<f32>() / count as f32;
+                    diff * diff
+                })
+                .sum::<f32>()
+                / count as f32;
 
             Some(variance.sqrt())
-        },
-        _ => None
+        }
+        _ => None,
     }
 }
 
-
-
 #[tauri::command]
-fn get_home_savings(mut user_savings: user::savings::Saver) -> user::savings::Saver {
-        
-        if user_savings.compare_home_ownership {
-
-            let mut new_home_user_savings = user_savings.clone();
-            new_home_user_savings.apply_annual_changes();
-            (user_savings.interest_rates, user_savings.inflation_rates) = new_home_user_savings.get_rates();
-            user_savings.home_savings = new_home_user_savings.home_savings;
-
-            let mut new_rental_user_savings = user_savings.clone();
-            new_rental_user_savings.apply_annual_changes_rent();
-            user_savings.rental_savings = new_rental_user_savings.rental_savings;
-
-
-            return user_savings
-
-        } else {
-
-            let mut new_user_savings = user_savings.clone();
-
-            new_user_savings.apply_annual_changes();
-            (user_savings.interest_rates, user_savings.inflation_rates) = new_user_savings.get_rates();
-            user_savings.home_savings = new_user_savings.home_savings;
-
-            return user_savings;
-
-        }
-
+fn calculate(
+    mut user_savings: user::savings::Saver,
+    recalculate_interest: bool,
+    recalculate_inflation: bool,
+) -> user::savings::Saver {
+    if recalculate_inflation || user_savings.inflation_rates == vec![0.0; 100] {
+        user_savings.inflation_rates = Inflation::default().rates;
+    }
+    if recalculate_interest || user_savings.interest_rates == vec![0.0; 100] {
+        user_savings.interest_rates = Interest::default().rates;
     }
 
-#[tauri::command]
-fn get_rental_savings(mut user_savings: user::savings::Saver) -> user::savings::Saver {
-    if user_savings.compare_home_ownership {
-        let mut new_user_savings = user_savings.clone();
-        new_user_savings.apply_annual_changes_rent();
-        user_savings.rental_savings = new_user_savings.rental_savings;
-        user_savings.inflation_rates = new_user_savings.inflation_rates;
-        user_savings.interest_rates = new_user_savings.interest_rates;
-    } else {
-        user_savings.rental_savings = vec![0.0; DEATH_AGE];
-    }
+    let mut home_user = user_savings.clone();
+    let mut rental_user = user_savings.clone();
+    let t1 = thread::spawn(|| {
+        home_user.apply_annual_changes();
+        home_user
+    });
+
+    let t2 = thread::spawn(|| {
+        rental_user.apply_annual_changes_rent();
+        rental_user
+    });
+
+    user_savings.home_savings = t1.join().unwrap().rental_savings;
+    user_savings.rental_savings = t2.join().unwrap().rental_savings;
     user_savings
 }
-
 
 // #[tauri::command]
 // fn get_zero_distributions(
@@ -152,7 +136,7 @@ fn get_rental_savings(mut user_savings: user::savings::Saver) -> user::savings::
 //                     &inflation_rates,
 //                     &interest_rates
 //                 );
-                
+
 //                 for i in (0..=res.len() - 1).rev() {
 //                     if res[i] != 0.0 {
 //                         if age_zero_distribution.contains_key(&(i as u8)) {
@@ -164,7 +148,7 @@ fn get_rental_savings(mut user_savings: user::savings::Saver) -> user::savings::
 //                             Some(num) => num,
 //                             None => continue
 //                         };
-                        
+
 //                         stdv = stdv + match std_deviation(&interest_rates[currentage as usize..i]){
 //                             Some(num) => num,
 //                             None => continue
@@ -184,12 +168,8 @@ fn get_rental_savings(mut user_savings: user::savings::Saver) -> user::savings::
 //         }
 
 fn main() {
-
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![
-            get_home_savings,
-            get_rental_savings,
-        ])
+        .invoke_handler(tauri::generate_handler![calculate,])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

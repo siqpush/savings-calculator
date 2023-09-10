@@ -26,7 +26,7 @@ export function PlotData(props: PlotDataProps) {
                     name: 'Home',
                 },
                 {
-                    x: Array.from(Array(props.rentalSavings.length).keys()),
+                    x: Array.from(Array(props.homeSavings.length).keys()),
                     y: props.rentalSavings,
                     type: 'scatter',
                     mode: 'lines+markers',
@@ -42,14 +42,14 @@ export function PlotData(props: PlotDataProps) {
                     b: 60   // adjust as needed
                 },
                 xaxis: {
-                    range: [-5, props.homeSavings.length],
+                    rangemode: 'nonnegative',
                     type: 'linear',
                     linewidth: 1,
                 },
                 yaxis: {
                     position: 0,
-                    range: [0, props.yMax],
-                    rangeslider: {range: [0, props.yMax]},
+                    rangemode: 'nonnegative',
+                    rangeslider: {visible: true},
                     type: 'linear',
                 },
                 legend: {
@@ -69,17 +69,18 @@ export function PlotData(props: PlotDataProps) {
                     x1: props.retirementAge,
                     y1: props.yMax * .8,
                     line: {
-                        color: 'blue',
+                        color: 'black',
                         width: 1,
+                        dash: 'dot'
                     },
                     label: {
-                        text: 'Begin Distributions...',
+                        text: 'Retire',
                         textposition: 'end',
                         textangle: 0,
                         font: {
                             family: 'Georgia, serif',
                             size: 12,
-                            color: 'blue',
+                            color: 'black',
                         },
                     },
                 }]

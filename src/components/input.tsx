@@ -23,9 +23,32 @@ export function Input(props: InputProps)  {
             setIncrement(0);
             return;
         }
-        if (value + increment < 0.0) {
-            setValue(0.0);
-            props.onValueChange(0.0);
+        if (props.label === "Age" || props.label === "Retirement Age") {
+            if (value + increment > 100) {
+                setValue(100);
+                props.onValueChange(100);
+            } else if (value + increment < 0) {
+                setValue(0);
+                props.onValueChange(0);
+            } else {
+                setValue(value + increment);
+                props.onValueChange(value + increment);
+            }
+        } else if (props.label === "Net Worth" 
+                    || props.label === "Home Equity" 
+                    || props.label === "Mortgage" 
+                    || props.label === "Min Monthly Retirement Income" 
+                    || props.label === "Max Monthly Retirement Income" 
+                    || props.label === "Rent"
+                    || props.label === "Mortgage Rate"
+        ) {
+            if (value + increment < 0) {
+                setValue(0);
+                props.onValueChange(0);
+            } else {
+                setValue(value + increment);
+                props.onValueChange(value + increment);
+            }
         } else {
             setValue(value + increment);
             props.onValueChange(value + increment);
@@ -36,7 +59,7 @@ export function Input(props: InputProps)  {
         <div className="buttons-container">
             {props.label}
             <button className="button-arounder" type="button" onClick={() => handleIncrementClick(1)}>+</button>
-            {props.value >= 1000 ? Math.round(props.value).toLocaleString() : props.value.toPrecision(2)}
+            {Math.abs(props.value) >= 100 ? Math.round(props.value).toLocaleString() : props.value.toPrecision(2)}
             <button className="button-arounder" type="button" onClick={() => handleIncrementClick(-1)}>-</button>
         </div>
     )

@@ -7,28 +7,28 @@ import { BarPlotData } from "./components/plots/barplot";
 import {ZeroDistributionsType, UserSavingsType, updateUserSavings} from "./structs/userSavings";
 
 function App() {
-
-  // Initialize User Savings State Variables
   const [userSavings, setUserSavings] = useState({
-    currentAge: 35,
-    retirementAge: 67,
-    totalSavings: 0,
-    monthlySavings: 0,
-    monthlyRent: 0,
-    homeValue: 0,
-    mortgageOutstanding: 0,
-    mortgageDebt: 0,
+    currentAge: 30,
+    retirementAge: 65,
+    totalSavings: 100000,
+    monthlyIncome: 10000,
+    monthlyExpenses: 5000,
+    monthlyRent: 2000,
+    homeValue: 500000,
+    mortgageDebt: 250000,
+    mortgageOutstanding: 250000,
+    activeRetirement: false,
     monthlyMortgagePayment: 0,
-    minBaselineRetirementIncome: 0,
-    maxBaselineRetirementIncome: 0,
-    mortgageRate: 0.04,
-    compareHomeOwnership: true,
-    recalculateInflation: false,
-    recalculateInterest: false,
-    inflationRates: Array(100).fill(0.0),
-    interestRates: Array(100).fill(0.0),
-    rentalSavings: Array(100).fill(0.0),
-    homeSavings: Array(100).fill(0.0),
+    minBaselineRetirementIncome: 5000,
+    maxBaselineRetirementIncome: 10000,
+    mortgageRate: 0.03,
+    mortgageTerm: 30,
+    inflationRates: Array(100).fill(0),
+    interestRates: Array(100).fill(0),
+    rentalSavings: [] as number[],
+    rentalAnnualNet: [] as number[],
+    homeSavings: [] as number[],
+    homeAnnualNet: [] as number[],
   } as UserSavingsType);
 
   // User Savings State Variables
@@ -46,16 +46,14 @@ function App() {
   } as ZeroDistributionsType);
 
   const validate = () => {
-    validateTotalSavings();
     validateMortgage();
-    
+    validateTotalSavings();
+    validateRetirementInput();
   }
 
   const validateRetirementInput = () => {
     if (userSavings.minBaselineRetirementIncome > userSavings.maxBaselineRetirementIncome) {
-      userSavings.maxBaselineRetirementIncome = userSavings.minBaselineRetirementIncome;
-    } else if (userSavings.maxBaselineRetirementIncome < userSavings.minBaselineRetirementIncome) {
-      userSavings.maxBaselineRetirementIncome = userSavings.minBaselineRetirementIncome;
+      userSavings.maxBaselineRetirementIncome = userSavings.minBaselineRetirementIncome+1;
     } else {
       // do nothing
     }
@@ -63,11 +61,11 @@ function App() {
 
   const validateMortgage = () => {
 
-    if (userSavings.mortgageDebt > userSavings.homeValue) {
+    if (userSavings.mortgageDebt >= userSavings.homeValue) {
       userSavings.mortgageDebt = userSavings.homeValue
     }
     
-    if (userSavings.mortgageDebt < 0) {
+    if (userSavings.mortgageDebt <= 0) {
       userSavings.mortgageDebt = 0
     }
   }
@@ -78,33 +76,26 @@ function App() {
     }
   }
 
-  useEffect(() => {    
-    get_rental_savings()
-    get_home_savings()
+  useEffect(() => {
+    calculate()
   },[
-    userSavings.compareHomeOwnership,
     userSavings.currentAge,
     userSavings.retirementAge,
     userSavings.totalSavings,
-    userSavings.monthlySavings,
+    userSavings.monthlyExpenses,
+    userSavings.monthlyIncome,
     userSavings.monthlyRent,
     userSavings.homeValue,
     userSavings.mortgageDebt,
     userSavings.minBaselineRetirementIncome,
     userSavings.maxBaselineRetirementIncome,
-    userSavings.recalculateInflation,
-    userSavings.recalculateInterest,
     userSavings.mortgageRate,
+    userSavings.mortgageTerm,
   ]);
-  
-  async function get_home_savings() {
+
+  async function calculate(recalcInt: boolean = false, recalcInf: boolean = false) {
     validate();
-    setUserSavings(await invoke("get_home_savings", {userSavings: userSavings}));
-  }
-  
-  async function get_rental_savings() {
-    validate();
-    setUserSavings(await invoke("get_rental_savings", {userSavings: userSavings}));
+    setUserSavings(await invoke("calculate", {userSavings: userSavings, recalculateInterest: recalcInt, recalculateInflation: recalcInf}));
   }
 
 
@@ -159,10 +150,17 @@ function App() {
             />
 
             <Input 
-                label="EOM Net Income" 
-                value={userSavings.monthlySavings}
+                label="Monthly Income" 
+                value={userSavings.monthlyIncome}
                 multiplier={1000}
-                onValueChange={(num) => handleUserSavingsChange('monthlySavings', Number(num))} 
+                onValueChange={(num) => handleUserSavingsChange('monthlyIncome', Number(num))} 
+            />
+
+            <Input 
+                label="Monthly Expenses" 
+                value={userSavings.monthlyExpenses}
+                multiplier={1000}
+                onValueChange={(num) => handleUserSavingsChange('monthlyExpenses', Number(num))} 
             />
 
             <Input 
@@ -182,34 +180,40 @@ function App() {
             <Input 
                 label="Mortgage" 
                 value={userSavings.mortgageDebt}
-                multiplier={userSavings.homeValue / 10}
+                multiplier={userSavings.homeValue / 20}
                 onValueChange={(num) => handleUserSavingsChange('mortgageDebt', Number(num))} 
             />
 
             <Input 
                 label="Min Monthly Retirement Income" 
                 value={userSavings.minBaselineRetirementIncome}
-                multiplier={1000}
+                multiplier={Math.max(userSavings.totalSavings * 0.001, 100)}
                 onValueChange={(num) => handleUserSavingsChange('minBaselineRetirementIncome', Number(num))} 
             />
 
             <Input 
                 label="Max Monthly Retirement Income"  
                 value={userSavings.maxBaselineRetirementIncome}
-                multiplier={1000} 
+                multiplier={Math.max(userSavings.totalSavings * 0.001, 100)} 
                 onValueChange={(num) => handleUserSavingsChange('maxBaselineRetirementIncome', Number(num))} 
             />
             <Input 
                 label="Mortgage Rate"  
                 value={userSavings.mortgageRate}
-                multiplier={0.1} 
+                multiplier={0.005} 
                 onValueChange={(num) => handleUserSavingsChange('mortgageRate', Number(num))} 
+            />
+            <Input 
+                label="Mortgage Term"  
+                value={userSavings.mortgageTerm}
+                multiplier={1} 
+                onValueChange={(num) => handleUserSavingsChange('mortgageTerm', Number(num))} 
             />
           </form>
         </div>
         <div className="Plot">
           <div className="savingsPlot">
-            <PlotData retirementAge={userSavings.retirementAge} homeSavings={userSavings.homeSavings} rentalSavings={userSavings.rentalSavings} yMax={10000000}></PlotData>
+            <PlotData retirementAge={userSavings.retirementAge} homeSavings={userSavings.homeSavings} rentalSavings={userSavings.rentalSavings} yMax={Math.max(userSavings.totalSavings * 10, 1000000)}></PlotData>
           </div>
             <div className="zeroDistributionsPlot">
             <BarPlotData age={zeroDistributions.age} count={zeroDistributions.count} avg={zeroDistributions.avg} std={zeroDistributions.stdv}></BarPlotData>
@@ -219,24 +223,16 @@ function App() {
 
         <div className="new-rates-refresh-button">
             Recalculate ROI
-            <label className="button-arounder">
-                <input 
-                    type="checkbox" 
-                    checked={userSavings.recalculateInterest}
-                    onChange={() => handleUserSavingsChange("recalculateInterest", !userSavings.recalculateInterest)}
-                />
-            </label>
+            <button type="button" onClick={() => calculate(true, false)}>
+            X 
+            </button>
         </div>
 
         <div className="new-rates-refresh-button">
             Recalculate Inflation
-            <label className="button-arounder">
-                <input 
-                    type="checkbox" 
-                    checked={userSavings.recalculateInflation}
-                    onChange={() => handleUserSavingsChange("recalculateInflation", !userSavings.recalculateInflation)}
-                />
-            </label>
+            <button type="button" onClick={() => calculate(false, true)}>
+            X
+            </button>   
         </div>
         
         {/* <div className="zero-distribution-button">
@@ -258,7 +254,8 @@ function App() {
                       <th>Age</th>
                       <th>ROI</th>
                       <th>Inflation</th>
-                      <th>Networth</th>
+                      <th>Networth w/ Home</th>
+                      <th>Networth wo/ Home</th>
                   </tr>
               </thead>
               <tbody>
@@ -269,6 +266,7 @@ function App() {
                       <td>{(userSavings.interestRates[j]*100).toFixed(1)}%</td>
                       <td>{(userSavings.inflationRates[j]*100).toFixed(1)}%</td>
                       <td>{i.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                      <td>{userSavings.rentalSavings[j].toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                     </tr>
                   ) : null
                 ))}
