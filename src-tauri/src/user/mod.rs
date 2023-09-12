@@ -114,9 +114,10 @@ pub mod saver {
 }
 pub mod renter {
     use serde::{Deserialize, Serialize};
+    use std::default::Default;
     pub const STD_WITHDRAWAL_RATE: f32 = 0.04;
 
-    #[derive(Debug, Default, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Renter {
         pub current_age: u8,
@@ -129,15 +130,39 @@ pub mod renter {
         pub mortgage_debt: f32,
         pub mortgage_rate: f32,
         pub mortgage_term: u8,
-        pub monthly_mortgage_payment: f32,
+        pub monthly_mortgage_payment: Option<f32>,
         pub min_baseline_retirement_income: f32,
         pub max_baseline_retirement_income: f32,
         pub interest_rates: Vec<f32>,
         pub inflation_rates: Vec<f32>,
         pub home_savings: Vec<f32>,
         pub rental_savings: Vec<f32>,
-        pub rental_annual_net: Vec<f32>,
         pub active_retirement: bool,
+    }
+
+    impl Default for Renter {
+        fn default() -> Self {
+            Renter {
+                current_age: 0,
+                retirement_age: 0,
+                total_savings: 0.0,
+                monthly_income: 0.0,
+                monthly_expenses: 0.0,
+                home_value: 0.0,
+                monthly_rent: 0.0,
+                mortgage_debt: 0.0,
+                mortgage_rate: 0.0,
+                mortgage_term: 0,
+                monthly_mortgage_payment: None,
+                min_baseline_retirement_income: 0.0,
+                max_baseline_retirement_income: 0.0,
+                interest_rates: vec![0.0; 100],
+                inflation_rates: vec![0.0; 100],
+                home_savings: vec![0.0; 100],
+                rental_savings: vec![0.0; 100],
+                active_retirement: false,
+            }
+        }
     }
 
     impl Renter {
@@ -147,7 +172,6 @@ pub mod renter {
         pub fn monthly_interest(&self) -> f32 {
             self.interest_rates[self.current_age as usize] / 12.0
         }
-
         pub fn expenses(&mut self) -> f32 {
             let total_expenses = self.monthly_rent + self.monthly_expenses;
             self.monthly_expenses *= 1.0 + self.monthly_inflation();
@@ -185,28 +209,23 @@ pub mod renter {
             income
         }
 
-        pub fn apply_annual_changes_rent(&mut self) {
-            for month in 0..12 {
-                let num = self.total_savings + self.income() - self.expenses();
-                if num >= 0.0 {
-                    if month == 11 {
-                        self.rental_savings.push(num);
-                    }
-                    self.total_savings = num;
-                } else {
-                    self.rental_savings
-                        .extend(vec![0.0; 100 - self.current_age as usize]);
-                    return;
-                }
+        pub fn apply_monthly_changes(&mut self) -> f32 {
+            self.total_savings + self.income() - self.expenses()
+        }
+
+        pub fn apply_annual_changes(&mut self) {
+            for _ in 0..12 {
+                self.total_savings = self.apply_monthly_changes();
             }
+            self.rental_savings[self.current_age as usize] = self.total_savings;
         }
 
         pub fn calculate_savings(&mut self) {
             //initualize empty
             self.rental_savings = vec![0.0; (self.current_age - 1) as usize];
-            while self.current_age < 100 {
+            while self.current_age < 100 || self.total_savings <= 0.0 {
                 self.active_retirement = self.current_age >= self.retirement_age;
-                self.apply_annual_changes_rent();
+                self.apply_annual_changes();
             }
             self.current_age += 1;
         }
@@ -215,12 +234,12 @@ pub mod renter {
 
 pub mod owner {
     use serde::{Deserialize, Serialize};
-
+    use std::default::Default;
     pub const PROPERTY_TAX: f32 = 0.01 / 12.0;
     pub const HOME_EXPENSES: f32 = 0.01 / 12.0;
     pub const STD_WITHDRAWAL_RATE: f32 = 0.04;
 
-    #[derive(Debug, Default, Clone, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Owner {
         pub current_age: u8,
@@ -233,7 +252,7 @@ pub mod owner {
         pub mortgage_debt: f32,
         pub mortgage_rate: f32,
         pub mortgage_term: u8,
-        pub monthly_mortgage_payment: f32,
+        pub monthly_mortgage_payment: Option<f32>,
         pub min_baseline_retirement_income: f32,
         pub max_baseline_retirement_income: f32,
         pub interest_rates: Vec<f32>,
@@ -242,6 +261,32 @@ pub mod owner {
         pub rental_savings: Vec<f32>,
         pub active_retirement: bool,
         pub home_owned_age: Option<u8>,
+    }
+
+    impl Default for Owner {
+        fn default() -> Self {
+            Owner {
+                current_age: 0,
+                retirement_age: 0,
+                total_savings: 0.0,
+                monthly_income: 0.0,
+                monthly_expenses: 0.0,
+                home_value: 0.0,
+                monthly_rent: 0.0,
+                mortgage_debt: 0.0,
+                mortgage_rate: 0.0,
+                mortgage_term: 0,
+                monthly_mortgage_payment: None,
+                min_baseline_retirement_income: 0.0,
+                max_baseline_retirement_income: 0.0,
+                interest_rates: vec![0.0; 100],
+                inflation_rates: vec![0.0; 100],
+                home_savings: vec![0.0; 100],
+                rental_savings: vec![0.0; 100],
+                active_retirement: false,
+                home_owned_age: None,
+            }
+        }
     }
 
     impl Owner {
@@ -257,7 +302,6 @@ pub mod owner {
         pub fn mortgage_term_months(&self) -> f32 {
             self.mortgage_term as f32 * 12.0
         }
-
         pub fn mortgage_installments(&self) -> f32 {
             if self.mortgage_rate == 0.0 {
                 self.mortgage_debt / self.mortgage_term_months()
@@ -268,17 +312,15 @@ pub mod owner {
                     / ((1.0 + self.monthly_mortgage_rate()).powf(self.mortgage_term_months()) - 1.0)
             }
         }
-
         // subtract monthly mortgage payment from mortgage debt and add monthly interest payment
         pub fn monthly_mortgage_interest_payment(&self) -> f32 {
-            self.monthly_mortgage_payment * self.monthly_mortgage_rate()
+            self.monthly_mortgage_payment.unwrap_or(0.0) * self.monthly_mortgage_rate()
         }
-
         pub fn make_mortgage_payment(&mut self) {
-            if self.mortgage_debt < self.monthly_mortgage_payment {
-                self.monthly_mortgage_payment = self.mortgage_debt;
+            if self.mortgage_debt < self.monthly_mortgage_payment.unwrap_or(0.0) {
+                self.monthly_mortgage_payment = Some(self.mortgage_debt);
             }
-            self.mortgage_debt -= self.monthly_mortgage_payment;
+            self.mortgage_debt -= self.monthly_mortgage_payment.unwrap();
             if self.mortgage_debt <= 0.0 {
                 if self.home_owned_age.is_none() {
                     self.home_owned_age = Some(self.current_age);
@@ -286,16 +328,17 @@ pub mod owner {
                 self.mortgage_debt = 0.0;
             }
         }
+        // calculate monthly expenses for a homeowner (mortgage, property tax, home expenses)
         pub fn calculate_expenses(&mut self) -> f32 {
             self.home_value * PROPERTY_TAX
                 + self.home_value * HOME_EXPENSES
                 + self.monthly_mortgage_interest_payment()
         }
-
+        // calculate monthly interest earnings
         pub fn interest_earnings(&self) -> f32 {
             (self.total_savings - (self.home_value - self.mortgage_debt)) * self.monthly_interest()
         }
-
+        // calculate monthly withdrawal rate (4% of total savings or min/max baseline retirement income)
         pub fn monthly_withdrawal_rate(&self) -> f32 {
             if self.min_baseline_retirement_income < self.total_savings * STD_WITHDRAWAL_RATE
                 && self.max_baseline_retirement_income > self.total_savings * STD_WITHDRAWAL_RATE
@@ -316,31 +359,29 @@ pub mod owner {
                 self.monthly_income + self.interest_earnings()
             }
         }
-
         pub fn apply_monthly_changes(&mut self) -> f32 {
             let month_end = self.total_savings + self.income() - self.calculate_expenses();
             self.monthly_income = self.monthly_income * (1.0 + self.monthly_inflation());
             self.make_mortgage_payment();
             return month_end;
         }
-
         pub fn apply_annual_changes(&mut self) {
             for _ in 0..12 {
                 self.total_savings = self.apply_monthly_changes();
             }
-            self.home_savings.push(self.total_savings);
+            self.home_savings[self.current_age as usize] = self.total_savings;
         }
-
         pub fn calculate_savings(&mut self) {
             //initualize empty
             self.rental_savings = vec![0.0; (self.current_age - 1) as usize];
-            self.monthly_mortgage_payment = self.mortgage_installments();
-
-            while self.current_age < 100 {
+            if self.monthly_mortgage_payment.is_none() {
+                self.monthly_mortgage_payment = Some(self.mortgage_installments());
+            }
+            while self.current_age < 100 || self.total_savings <= 0.0 {
                 self.active_retirement = self.current_age >= self.retirement_age;
                 self.apply_annual_changes();
+                self.current_age += 1;
             }
-            self.current_age += 1;
         }
     }
 }
