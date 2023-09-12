@@ -27,6 +27,7 @@ export interface UserSavingsType {
   rentalAnnualNet: number[];
   homeSavings: number[];
   homeAnnualNet: number[];
+  homeOwnedAge: number;
 }
 
 export const updateUserSavings = <K extends keyof UserSavingsType>(

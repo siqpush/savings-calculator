@@ -1,18 +1,14 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-
-use rand::prelude::Distribution;
-
-
 use serde::Serialize;
-
 use std::default::Default;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::thread;
+
 use std::vec;
 
+mod tests;
 mod user;
 use crate::user::rates::{Inflation, Interest};
 
@@ -72,10 +68,10 @@ fn std_deviation(data: &[f32]) -> Option<f32> {
 
 #[tauri::command]
 fn calculate(
-    mut user_savings: user::savings::Saver,
+    mut user_savings: user::owner::Owner,
     recalculate_interest: bool,
     recalculate_inflation: bool,
-) -> user::savings::Saver {
+) -> user::owner::Owner {
     if recalculate_inflation || user_savings.inflation_rates == vec![0.0; 100] {
         user_savings.inflation_rates = Inflation::default().rates;
     }
@@ -85,18 +81,10 @@ fn calculate(
 
     let mut home_user = user_savings.clone();
     let mut rental_user = user_savings.clone();
-    let t1 = thread::spawn(|| {
-        home_user.apply_annual_changes();
-        home_user
-    });
 
-    let t2 = thread::spawn(|| {
-        rental_user.apply_annual_changes_rent();
-        rental_user
-    });
-
-    user_savings.home_savings = t1.join().unwrap().rental_savings;
-    user_savings.rental_savings = t2.join().unwrap().rental_savings;
+    user_savings.home_savings = home_user.home_savings;
+    user_savings.rental_savings = rental_user.rental_savings;
+    println!("home: {:?}", user_savings.home_savings);
     user_savings
 }
 

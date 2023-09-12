@@ -8,27 +8,28 @@ import {ZeroDistributionsType, UserSavingsType, updateUserSavings} from "./struc
 
 function App() {
   const [userSavings, setUserSavings] = useState({
-    currentAge: 30,
+    currentAge: 0,
     retirementAge: 65,
-    totalSavings: 100000,
-    monthlyIncome: 10000,
-    monthlyExpenses: 5000,
+    totalSavings: 10000,
+    monthlyIncome: 1000,
+    monthlyExpenses: 500,
     monthlyRent: 2000,
     homeValue: 500000,
-    mortgageDebt: 250000,
-    mortgageOutstanding: 250000,
+    mortgageDebt: 10,
+    mortgageOutstanding: 0,
     activeRetirement: false,
     monthlyMortgagePayment: 0,
     minBaselineRetirementIncome: 5000,
     maxBaselineRetirementIncome: 10000,
     mortgageRate: 0.03,
-    mortgageTerm: 30,
+    mortgageTerm: 100,
     inflationRates: Array(100).fill(0),
     interestRates: Array(100).fill(0),
     rentalSavings: [] as number[],
     rentalAnnualNet: [] as number[],
     homeSavings: [] as number[],
     homeAnnualNet: [] as number[],
+    homeOwnedAge: 0,
   } as UserSavingsType);
 
   // User Savings State Variables
@@ -44,37 +45,6 @@ function App() {
     avg: 0,
     stdv: 0,
   } as ZeroDistributionsType);
-
-  const validate = () => {
-    validateMortgage();
-    validateTotalSavings();
-    validateRetirementInput();
-  }
-
-  const validateRetirementInput = () => {
-    if (userSavings.minBaselineRetirementIncome > userSavings.maxBaselineRetirementIncome) {
-      userSavings.maxBaselineRetirementIncome = userSavings.minBaselineRetirementIncome+1;
-    } else {
-      // do nothing
-    }
-  }
-
-  const validateMortgage = () => {
-
-    if (userSavings.mortgageDebt >= userSavings.homeValue) {
-      userSavings.mortgageDebt = userSavings.homeValue
-    }
-    
-    if (userSavings.mortgageDebt <= 0) {
-      userSavings.mortgageDebt = 0
-    }
-  }
-
-  const validateTotalSavings = () => {
-    if (userSavings.totalSavings < userSavings.homeValue - userSavings.mortgageDebt) {
-      userSavings.mortgageDebt = userSavings.homeValue - userSavings.totalSavings
-    }
-  }
 
   useEffect(() => {
     calculate()
@@ -94,7 +64,6 @@ function App() {
   ]);
 
   async function calculate(recalcInt: boolean = false, recalcInf: boolean = false) {
-    validate();
     setUserSavings(await invoke("calculate", {userSavings: userSavings, recalculateInterest: recalcInt, recalculateInflation: recalcInf}));
   }
 
