@@ -11,6 +11,8 @@ use std::vec;
 mod tests;
 mod user;
 use crate::user::rates::{Inflation, Interest};
+use crate::user::saver::Owner;
+use crate::user::saver::Renter;
 
 // 0 to Death Age for time results
 pub const DEATH_AGE: usize = 100;
@@ -68,23 +70,20 @@ fn std_deviation(data: &[f32]) -> Option<f32> {
 
 #[tauri::command]
 fn calculate(
-    mut user_savings: user::owner::Owner,
+    mut user_savings: user::saver::Saver,
     recalculate_interest: bool,
     recalculate_inflation: bool,
-) -> user::owner::Owner {
-    if recalculate_inflation || user_savings.inflation_rates == vec![0.0; 100] {
-        user_savings.inflation_rates = Inflation::default().rates;
-    }
-    if recalculate_interest || user_savings.interest_rates == vec![0.0; 100] {
-        user_savings.interest_rates = Interest::default().rates;
-    }
+) -> user::saver::Saver {
+
+    user_savings.reset_inflation(recalculate_inflation);
+    user_savings.reset_interest(recalculate_interest);
 
     let mut home_user = user_savings.clone();
     let mut rental_user = user_savings.clone();
 
-    user_savings.home_savings = home_user.home_savings;
-    user_savings.rental_savings = rental_user.rental_savings;
-    println!("home: {:?}", user_savings.home_savings);
+    user_savings.home_savings = Owner::calculate_savings(&mut home_user);
+    user_savings.rental_savings = Renter::calculate_savings(&mut rental_user);
+
     user_savings
 }
 
