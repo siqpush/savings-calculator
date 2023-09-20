@@ -181,17 +181,17 @@ pub mod saver {
             if self.liquid_assets() <= 0.0 {
                 0.0
             } else {
-                if self.min_baseline_retirement_income < self.liquid_assets() * STD_MONTHLY_WITHDRAWAL_RATE
-                    && self.max_baseline_retirement_income > self.liquid_assets() * STD_MONTHLY_WITHDRAWAL_RATE
+                if self.min_baseline_retirement_income <= self.liquid_assets() * STD_MONTHLY_WITHDRAWAL_RATE
+                    && self.max_baseline_retirement_income >= self.liquid_assets() * STD_MONTHLY_WITHDRAWAL_RATE
                 {
                     -1.0 * STD_MONTHLY_WITHDRAWAL_RATE * self.liquid_assets()
                 // if the min baseline retirement income is greater than the standard monthly withdrawal rate use that (we always need more than the min)
                 } else if self.min_baseline_retirement_income > self.liquid_assets() * STD_MONTHLY_WITHDRAWAL_RATE
                 {
-                    -1.0 * (self.min_baseline_retirement_income / (self.liquid_assets() / 12.0))
+                    -1.0 * (self.min_baseline_retirement_income)
                 // if the max baseline retirement income is less than the standard monthly withdrawal rate use that (we never need more than the max)
                 } else if self.max_baseline_retirement_income < self.liquid_assets() * STD_MONTHLY_WITHDRAWAL_RATE {
-                    -1.0 * (self.min_baseline_retirement_income / (self.liquid_assets() / 12.0))
+                    -1.0 * (self.max_baseline_retirement_income)
                 } else {
                     unreachable!("shouldn't be here")
                 }
@@ -216,7 +216,8 @@ pub mod saver {
         }
         // c
         pub fn apply_monthly_changes(&mut self) -> f32 {
-            let mut month_end = self.total_savings + self.income() - self.expenses();
+            
+            let month_end = self.total_savings + self.income() - self.expenses();
             self.monthly_income *=  1.0 + self.monthly_inflation();
             self.monthly_expenses *= 1.0 + self.monthly_inflation();
             self.monthly_rent *= 1.0 + self.monthly_inflation();
@@ -258,7 +259,11 @@ pub mod saver {
                 SaverType::HomeOwner => {
                     self.cached_mortgage_installment = Some(Owner::mortgage_installments(self));
                     self.home_savings.fill(0.0);
-                    self.home_owned_age = None;
+                    if self.mortgage_debt == 0.0 {
+                        self.home_owned_age = Some(self.current_age);
+                    } else {
+                        self.home_owned_age = None;
+                    }
                     self.home_savings[self.current_age as usize] = self.total_savings;
                 },
                 SaverType::Renter => {
