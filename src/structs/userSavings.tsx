@@ -13,9 +13,7 @@ export interface UserSavingsType {
   monthlyExpenses: number;
   monthlyRent: number;
   homeValue: number;
-  mortgageOutstanding: number; //these are rust specific fields
   mortgageDebt: number; 
-  monthlyMortgagePayment: number; //these are rust specific fields
   minBaselineRetirementIncome: number;
   maxBaselineRetirementIncome: number;
   mortgageRate: number;
@@ -24,10 +22,10 @@ export interface UserSavingsType {
   inflationRates: number[];
   interestRates: number[];
   rentalSavings: number[];
-  rentalAnnualNet: number[];
   homeSavings: number[];
-  homeAnnualNet: number[];
-  homeOwnedAge: number;
+  homeOwnedAge?: number | null;
+  cachedMortgageInstallment?: number | null;
+  ymax: number;
 }
 
 export const updateUserSavings = <K extends keyof UserSavingsType>(

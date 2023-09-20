@@ -16,9 +16,9 @@ div.Data {
 }
 
 div.savingsPlot {
-  margin-top: 2.5%;
+  margin-top: 1%;
   margin-left: 2.5%;
-  margin-bottom: 2.5%;
+  margin-bottom: 1%;
   }
   div.zeroDistributionsPlot {
     margin-top: 2.5%;
@@ -28,22 +28,20 @@ div.savingsPlot {
 
 div.DataTable {
   height: 30vh;
+  display: flex;
   overflow: scroll;
-  display: flex;
 }
 
-div.refresh-buttons {
-  display: flex;
-  flex-direction: row;
-  padding-left: 40%;
-}
-
-div.new-rates-refresh-buttons button {
-  padding: 5%;
-}
-
-div.zero-distribution-refresh-buttons {
-  padding: 5%;
+thead {
+  position: sticky;
+  top: 0px;
+  height: 6rem;
+  background-color: #ddd;
+  border: 0px solid #ddd;
+  opacity: 1;
+  transition-property: all; 
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 500ms;
 }
 
   /* You might also want to style the table for better readability */
@@ -53,7 +51,7 @@ div.zero-distribution-refresh-buttons {
   }
 
   .container .DataTable th, .container .DataTable td {
-    border: 1px solid #ddd;
+    border: 2px solid #ddd;
     padding: 2px;
     font-size: 14px;
     text-align: center;

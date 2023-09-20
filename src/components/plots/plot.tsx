@@ -1,33 +1,28 @@
 import Plot from 'react-plotly.js';
-import { ReactNode } from "react";
+import { ReactNode, useLayoutEffect } from "react";
+import { UserSavingsType } from '../../structs/userSavings';
 
 interface PlotDataProps {
-    retirementAge: number;
-    homeSavings: number[];
-    rentalSavings: number[];
-    yMax: number;
+    userSavings: UserSavingsType;
     children?: ReactNode;
 }
 
 export function PlotData(props: PlotDataProps) {
-    const plotlyData: Partial<typeof PlotData>[] = [
-        
-    ];
 
     return (
         <Plot
             data={[
                 {
-                    x: Array.from(Array(props.homeSavings.length).keys()),
-                    y: props.homeSavings,
+                    x: Array.from(Array(props.userSavings.homeSavings.length).keys()),
+                    y: props.userSavings.homeSavings,
                     type: 'scatter',
                     mode: 'lines+markers',
                     marker: {color: 'red' , size: 1},
                     name: 'Home',
                 },
                 {
-                    x: Array.from(Array(props.homeSavings.length).keys()),
-                    y: props.rentalSavings,
+                    x: Array.from(Array(props.userSavings.rentalSavings.length).keys()),
+                    y: props.userSavings.rentalSavings,
                     type: 'scatter',
                     mode: 'lines+markers',
                     marker: {color: 'blue', size: 1},
@@ -35,21 +30,19 @@ export function PlotData(props: PlotDataProps) {
                 },
             ]}
             layout={ {
-                width: 600,
-                height: 200,
+                width: 700,
+                height: 500,
                 margin: {
                     t: 10,  // adjust as needed
                     b: 60   // adjust as needed
                 },
                 xaxis: {
-                    rangemode: 'nonnegative',
                     type: 'linear',
                     linewidth: 1,
                 },
                 yaxis: {
                     position: 0,
-                    rangemode: 'nonnegative',
-                    rangeslider: {visible: true},
+                    range: [0, props.userSavings.ymax],
                     type: 'linear',
                 },
                 legend: {
@@ -64,26 +57,49 @@ export function PlotData(props: PlotDataProps) {
                 },
                 shapes: [{
                     type: 'line',
-                    x0: props.retirementAge,
+                    x0: props.userSavings.retirementAge,
                     y0: 0,
-                    x1: props.retirementAge,
-                    y1: props.yMax * .8,
+                    x1: props.userSavings.retirementAge,
+                    y1: props.userSavings.ymax * 0.75,
                     line: {
                         color: 'black',
                         width: 1,
                         dash: 'dot'
                     },
                     label: {
-                        text: 'Retire',
+                        text: 'Retirement',
                         textposition: 'end',
-                        textangle: 0,
+                        textangle: 45,
                         font: {
                             family: 'Georgia, serif',
                             size: 12,
-                            color: 'black',
+                            color: 'green',
                         },
                     },
-                }]
+                },
+                {
+                    type: 'line',
+                    x0: (props.userSavings.homeOwnedAge) ? (props.userSavings.homeOwnedAge) : 0,
+                    y0: 0,
+                    x1: (props.userSavings.homeOwnedAge) ? (props.userSavings.homeOwnedAge) : 0,
+                    y1: props.userSavings.ymax * 0.75,
+                    line: {
+                        color: 'black',
+                        width: 1,
+                        dash: 'dot'
+                    },
+                    label: {
+                        text: 'Mortgage Paid',
+                        textposition: 'end',
+                        textangle: 45,
+                        font: {
+                            family: 'Georgia, serif',
+                            size: (props.userSavings.homeOwnedAge) ?  12 : 0,
+                            color: 'green',
+                        },
+                    },
+                }
+                ]
             } }
         />
     );

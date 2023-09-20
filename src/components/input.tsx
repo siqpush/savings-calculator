@@ -14,15 +14,7 @@ export function Input(props: InputProps)  {
     const handleIncrementClick = (dir: number) => {
 
         setIncrement(dir * props.multiplier);
-        if (value === undefined) {
-            console.log("value is undefined");
-            setValue(0.0);
-        }
-        if (increment === undefined) {
-            console.log("increment is undefined");
-            setIncrement(0);
-            return;
-        }
+        
         if (props.label === "Age" || props.label === "Retirement Age") {
             if (value + increment > 100) {
                 setValue(100);
@@ -56,7 +48,7 @@ export function Input(props: InputProps)  {
     }
 
     return (
-        <div className="buttons-container">
+        <div className="buttons-container" id={"form-field-" + props.label}>
             {props.label}
             <button className="button-arounder" type="button" onClick={() => handleIncrementClick(1)}>+</button>
             {Math.abs(props.value) >= 100 ? Math.round(props.value).toLocaleString() : props.value.toPrecision(2)}

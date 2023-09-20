@@ -2,17 +2,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use serde::Serialize;
+use user::saver::SaverType;
 use std::default::Default;
 use std::sync::Arc;
 use std::sync::Mutex;
-
 use std::vec;
-
 mod tests;
 mod user;
-use crate::user::rates::{Inflation, Interest};
-use crate::user::saver::Owner;
-use crate::user::saver::Renter;
 
 // 0 to Death Age for time results
 pub const DEATH_AGE: usize = 100;
@@ -69,21 +65,27 @@ fn std_deviation(data: &[f32]) -> Option<f32> {
 }
 
 #[tauri::command]
-fn calculate(
-    mut user_savings: user::saver::Saver,
-    recalculate_interest: bool,
-    recalculate_inflation: bool,
-) -> user::saver::Saver {
+fn calculate(mut user_savings: user::saver::Saver, recalculate: bool) -> user::saver::Saver {
 
-    user_savings.reset_inflation(recalculate_inflation);
-    user_savings.reset_interest(recalculate_interest);
+    user_savings.reset_rates(recalculate);
+    let mut owner_savings = user::saver::Saver{
+        monthly_rent: 0.0,
+        ..user_savings.clone()
+    };   
+    let mut renter_savings = user::saver::Saver{
+        home_value: 0.0,
+        mortgage_debt: 0.0,
+        mortgage_term: 0,
+        mortgage_rate: 0.0,
+        ..user_savings.clone()
+    };
 
-    let mut home_user = user_savings.clone();
-    let mut rental_user = user_savings.clone();
+    user_savings.home_savings = owner_savings.calculate_savings(SaverType::HomeOwner);
+    user_savings.home_owned_age = owner_savings.home_owned_age;
 
-    user_savings.home_savings = Owner::calculate_savings(&mut home_user);
-    user_savings.rental_savings = Renter::calculate_savings(&mut rental_user);
+    user_savings.rental_savings = renter_savings.calculate_savings(SaverType::Renter);
 
+    user_savings.ymax = user_savings.get_ymax();
     user_savings
 }
 

@@ -3,33 +3,30 @@ import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
 import { PlotData } from "./components/plots/plot";
 import { Input } from "./components/input";
-import { BarPlotData } from "./components/plots/barplot";
+
 import {ZeroDistributionsType, UserSavingsType, updateUserSavings} from "./structs/userSavings";
 
 function App() {
   const [userSavings, setUserSavings] = useState({
-    currentAge: 0,
+    currentAge: 30,
     retirementAge: 65,
-    totalSavings: 10000,
-    monthlyIncome: 1000,
-    monthlyExpenses: 500,
-    monthlyRent: 2000,
+    totalSavings: 1000000,
+    monthlyIncome: 0,
+    monthlyExpenses: 0,
+    monthlyRent: 1000,
     homeValue: 500000,
-    mortgageDebt: 10,
-    mortgageOutstanding: 0,
+    mortgageDebt: 200000,
     activeRetirement: false,
-    monthlyMortgagePayment: 0,
-    minBaselineRetirementIncome: 5000,
-    maxBaselineRetirementIncome: 10000,
-    mortgageRate: 0.03,
-    mortgageTerm: 100,
-    inflationRates: Array(100).fill(0),
-    interestRates: Array(100).fill(0),
-    rentalSavings: [] as number[],
-    rentalAnnualNet: [] as number[],
-    homeSavings: [] as number[],
-    homeAnnualNet: [] as number[],
-    homeOwnedAge: 0,
+    minBaselineRetirementIncome: 1000,
+    maxBaselineRetirementIncome: 2000,
+    mortgageRate: 0.035,
+    mortgageTerm: 30,
+    inflationRates: Array(100).fill(0.0),
+    interestRates: Array(100).fill(0.0),
+    rentalSavings: Array(100).fill(0.0),
+    homeSavings: Array(100).fill(0.0),
+    ymax: 1000000,
+    homeExpenses: 0.01,
   } as UserSavingsType);
 
   // User Savings State Variables
@@ -46,8 +43,71 @@ function App() {
     stdv: 0,
   } as ZeroDistributionsType);
 
+  // validations
+  function validate() {
+      // validations
+    if (userSavings.mortgageDebt > userSavings.homeValue) {
+        document.getElementById('form-field-Mortgage')?.setAttribute("style", "font-style: italic; color: red;");
+        let element = document.getElementById('data-warning');
+        if (element) {
+          element.innerText = "Mortgage cannot be greater than home value.";
+          element.setAttribute("style", "font-style: italic; color: red;");
+          userSavings.homeSavings = Array(100).fill(0.0);
+          userSavings.rentalSavings = Array(100).fill(0.0);
+        }
+        return false
+    } else {
+        document.getElementById('form-field-Mortgage')?.setAttribute("style", "font-style: regular; color: black;");
+        let element = document.getElementById('data-warning');
+        if (element) {
+          element.innerText = "";
+          element.setAttribute("style", "font-style: regular; color: black;");
+        }
+      }
+    if (userSavings.homeValue > userSavings.totalSavings + userSavings.mortgageDebt) {
+        document.getElementById('form-field-Net Worth')?.setAttribute("style", "font-style: italic; color: red;");
+        let element = document.getElementById('data-warning');
+        if (element) {
+          element.innerText = "Net worth cannot be less than home value + mortgage.";
+          element.setAttribute("style", "font-style: italic; color: red;");
+          userSavings.homeSavings = Array(100).fill(0.0);
+          userSavings.rentalSavings = Array(100).fill(0.0);
+        }
+        return false
+    } else {
+        document.getElementById('form-field-Net Worth')?.setAttribute("style", "font-style: regular; color: black;");
+        let element = document.getElementById('data-warning');
+        if (element) {
+          element.innerText = "";
+          element.setAttribute("style", "font-style: regular; color: black;");
+        }
+      }
+    if (userSavings.minBaselineRetirementIncome > userSavings.maxBaselineRetirementIncome) {
+        document.getElementById('form-field-Min Monthly Retirement Income')?.setAttribute("style", "font-style: italic; color: red;");
+        document.getElementById('form-field-Max Monthly Retirement Income')?.setAttribute("style", "font-style: italic; color: red;");
+        let element = document.getElementById('data-warning');
+        if (element) {
+          element.innerText = "Min retirement income cannot be greater than max retirement income.";
+          element.setAttribute("style", "font-style: italic; color: red;");
+          userSavings.homeSavings = Array(100).fill(0.0);
+          userSavings.rentalSavings = Array(100).fill(0.0);
+        }
+        return false
+    } else {
+        document.getElementById('form-field-Min Monthly Retirement Income')?.setAttribute("style", "font-style: regular; color: black;");
+        document.getElementById('form-field-Max Monthly Retirement Income')?.setAttribute("style", "font-style: regular; color: black;");
+        let element = document.getElementById('data-warning');
+        if (element) {
+          element.innerText = "";
+          element.setAttribute("style", "font-style: regular; color: black;");
+      }
+    }
+    return true
+  }
   useEffect(() => {
-    calculate()
+    if (validate()) {
+      calculate(false)
+    }
   },[
     userSavings.currentAge,
     userSavings.retirementAge,
@@ -63,8 +123,8 @@ function App() {
     userSavings.mortgageTerm,
   ]);
 
-  async function calculate(recalcInt: boolean = false, recalcInf: boolean = false) {
-    setUserSavings(await invoke("calculate", {userSavings: userSavings, recalculateInterest: recalcInt, recalculateInflation: recalcInf}));
+  async function calculate(recalc: boolean = false) {
+    setUserSavings(await invoke("calculate", {userSavings: userSavings, recalculate: recalc}));
   }
 
 
@@ -90,7 +150,9 @@ function App() {
   return (
     <div className="container">
       <div className="Data">
+      
       <div className="DataInput">
+      <div id="data-warning"></div>
         <form
           id="main-form"
           className="row"
@@ -142,35 +204,21 @@ function App() {
             <Input 
                 label="Home Equity" 
                 value={userSavings.homeValue}
-                multiplier={250000}
+                multiplier={100000}
                 onValueChange={(num) => handleUserSavingsChange('homeValue', Number(num))} 
             />
 
             <Input 
                 label="Mortgage" 
                 value={userSavings.mortgageDebt}
-                multiplier={userSavings.homeValue / 20}
+                multiplier={50000}
                 onValueChange={(num) => handleUserSavingsChange('mortgageDebt', Number(num))} 
-            />
-
-            <Input 
-                label="Min Monthly Retirement Income" 
-                value={userSavings.minBaselineRetirementIncome}
-                multiplier={Math.max(userSavings.totalSavings * 0.001, 100)}
-                onValueChange={(num) => handleUserSavingsChange('minBaselineRetirementIncome', Number(num))} 
-            />
-
-            <Input 
-                label="Max Monthly Retirement Income"  
-                value={userSavings.maxBaselineRetirementIncome}
-                multiplier={Math.max(userSavings.totalSavings * 0.001, 100)} 
-                onValueChange={(num) => handleUserSavingsChange('maxBaselineRetirementIncome', Number(num))} 
             />
             <Input 
                 label="Mortgage Rate"  
                 value={userSavings.mortgageRate}
-                multiplier={0.005} 
-                onValueChange={(num) => handleUserSavingsChange('mortgageRate', Number(num))} 
+                multiplier={.005} 
+                onValueChange={(num) => handleUserSavingsChange('mortgageRate', num)} 
             />
             <Input 
                 label="Mortgage Term"  
@@ -178,30 +226,37 @@ function App() {
                 multiplier={1} 
                 onValueChange={(num) => handleUserSavingsChange('mortgageTerm', Number(num))} 
             />
+            <Input 
+                label="Min Monthly Retirement Income" 
+                value={userSavings.minBaselineRetirementIncome}
+                multiplier={1000}
+                onValueChange={(num) => handleUserSavingsChange('minBaselineRetirementIncome', Number(num))} 
+            />
+
+            <Input 
+                label="Max Monthly Retirement Income"  
+                value={userSavings.maxBaselineRetirementIncome}
+                multiplier={2000} 
+                onValueChange={(num) => handleUserSavingsChange('maxBaselineRetirementIncome', Number(num))} 
+            />
           </form>
         </div>
         <div className="Plot">
           <div className="savingsPlot">
-            <PlotData retirementAge={userSavings.retirementAge} homeSavings={userSavings.homeSavings} rentalSavings={userSavings.rentalSavings} yMax={Math.max(userSavings.totalSavings * 10, 1000000)}></PlotData>
+            <PlotData userSavings={userSavings}></PlotData>
           </div>
+          {/* 
             <div className="zeroDistributionsPlot">
             <BarPlotData age={zeroDistributions.age} count={zeroDistributions.count} avg={zeroDistributions.avg} std={zeroDistributions.stdv}></BarPlotData>
-          </div>
-        </div>
+          </div>*/}
+        </div> 
       </div>
 
         <div className="new-rates-refresh-button">
-            Recalculate ROI
-            <button type="button" onClick={() => calculate(true, false)}>
+            New Rates
+            <button type="button" onClick={() => calculate(true)}>
             X 
             </button>
-        </div>
-
-        <div className="new-rates-refresh-button">
-            Recalculate Inflation
-            <button type="button" onClick={() => calculate(false, true)}>
-            X
-            </button>   
         </div>
         
         {/* <div className="zero-distribution-button">
@@ -227,19 +282,19 @@ function App() {
                       <th>Networth wo/ Home</th>
                   </tr>
               </thead>
-              <tbody>
-                {userSavings.homeSavings.map((i, j) => (
-                  i !== 0 ? (
-                    <tr key={j}>
-                      <td>{j}</td>
-                      <td>{(userSavings.interestRates[j]*100).toFixed(1)}%</td>
-                      <td>{(userSavings.inflationRates[j]*100).toFixed(1)}%</td>
-                      <td>{i.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                      <td>{userSavings.rentalSavings[j].toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                    </tr>
-                  ) : null
-                ))}
-              </tbody>
+                <tbody>
+                  {userSavings.homeSavings.map((_, j) => (
+                    j > userSavings.currentAge ? (
+                      <tr key={j-2}>
+                        <td>{j-1}</td>
+                        <td>{(userSavings.interestRates[j-1]*100).toFixed(1)}%</td>
+                        <td>{(userSavings.inflationRates[j-1]*100).toFixed(1)}%</td>
+                        <td>{userSavings.homeSavings[j-1].toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                        <td>{userSavings.rentalSavings[j-1].toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                      </tr>
+                    ) : null
+                  ))}
+                </tbody>
           </table>
         </div>
       </div>
