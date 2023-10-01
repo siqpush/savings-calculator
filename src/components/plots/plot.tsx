@@ -1,5 +1,5 @@
 import Plot from 'react-plotly.js';
-import { ReactNode, useLayoutEffect } from "react";
+import { ReactNode } from "react";
 import { UserSavingsType } from '../../structs/userSavings';
 
 interface PlotDataProps {
@@ -82,7 +82,7 @@ export function PlotData(props: PlotDataProps) {
                     x0: (props.userSavings.homeOwnedAge) ? (props.userSavings.homeOwnedAge) : 0,
                     y0: 0,
                     x1: (props.userSavings.homeOwnedAge) ? (props.userSavings.homeOwnedAge) : 0,
-                    y1: props.userSavings.ymax * 0.75,
+                    y1: props.userSavings.ymax * 0.65,
                     line: {
                         color: 'black',
                         width: 1,

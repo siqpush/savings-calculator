@@ -4,21 +4,21 @@ import "./App.css";
 import { PlotData } from "./components/plots/plot";
 import { Input } from "./components/input";
 
-import {ZeroDistributionsType, UserSavingsType, updateUserSavings} from "./structs/userSavings";
+import {UserSavingsType, updateUserSavings} from "./structs/userSavings";
 
 function App() {
   const [userSavings, setUserSavings] = useState({
     currentAge: 30,
     retirementAge: 65,
     totalSavings: 1000000,
-    monthlyIncome: 0,
-    monthlyExpenses: 0,
-    monthlyRent: 1000,
-    homeValue: 500000,
-    mortgageDebt: 200000,
+    monthlyIncome: 8000,
+    monthlyExpenses: 4000,
+    monthlyRent: 3000,
+    homeValue: 750000,
+    mortgageDebt: 500000,
     activeRetirement: false,
-    minBaselineRetirementIncome: 1000,
-    maxBaselineRetirementIncome: 2000,
+    minBaselineRetirementIncome: 2000,
+    maxBaselineRetirementIncome: 3000,
     mortgageRate: 0.035,
     mortgageTerm: 30,
     inflationRates: Array(100).fill(0.0),
@@ -34,14 +34,6 @@ function App() {
     const updatedUserSavings = updateUserSavings(userSavings, property, value);
     setUserSavings(updatedUserSavings);
   };
-
-  // Initialize User Savings Return State Variables (empty arrays of numbers) to be used in PlotData
-  const [zeroDistributions, setZeroDistributions] = useState({
-    age: [] as number[],
-    count: [] as number[],
-    avg: 0,
-    stdv: 0,
-  } as ZeroDistributionsType);
 
   // validations
   function validate() {
@@ -128,25 +120,6 @@ function App() {
   }
 
 
-  async function getZeroDistributions() {
-
-    // validateRetirementInput();
-    // validateMortgage();
-
-    // setZeroDistributions(await invoke("get_zero_distributions", {
-    //   currentAge: currentAge, 
-    //   retirementAge: retirementAge,
-    //   totalSavings: totalSavings,
-    //   monthlySavings: monthlySavings,
-    //   homeValue: homeValue,
-    //   mortgageOutstanding: mortgageOutstanding,
-    //   minBaselineRetirementIncome: minBaselineRetirementIncome,
-    //   maxBaselineRetirementIncome: maxBaselineRetirementIncome,
-    // }));
-    // setIsPlotVisible(!isPlotVisible);
-  }
-
-
   return (
     <div className="container">
       <div className="Data">
@@ -176,21 +149,21 @@ function App() {
             <Input 
                 label="Net Worth" 
                 value={userSavings.totalSavings}
-                multiplier={100000}
+                multiplier={50000}
                 onValueChange={(num) => handleUserSavingsChange('totalSavings', Number(num))} 
             />
 
             <Input 
                 label="Monthly Income" 
                 value={userSavings.monthlyIncome}
-                multiplier={1000}
+                multiplier={500}
                 onValueChange={(num) => handleUserSavingsChange('monthlyIncome', Number(num))} 
             />
 
             <Input 
                 label="Monthly Expenses" 
                 value={userSavings.monthlyExpenses}
-                multiplier={1000}
+                multiplier={500}
                 onValueChange={(num) => handleUserSavingsChange('monthlyExpenses', Number(num))} 
             />
 
@@ -229,14 +202,14 @@ function App() {
             <Input 
                 label="Min Monthly Retirement Income" 
                 value={userSavings.minBaselineRetirementIncome}
-                multiplier={1000}
+                multiplier={500}
                 onValueChange={(num) => handleUserSavingsChange('minBaselineRetirementIncome', Number(num))} 
             />
 
             <Input 
                 label="Max Monthly Retirement Income"  
                 value={userSavings.maxBaselineRetirementIncome}
-                multiplier={2000} 
+                multiplier={500} 
                 onValueChange={(num) => handleUserSavingsChange('maxBaselineRetirementIncome', Number(num))} 
             />
           </form>
@@ -278,8 +251,8 @@ function App() {
                       <th>Age</th>
                       <th>ROI</th>
                       <th>Inflation</th>
-                      <th>Networth w/ Home</th>
-                      <th>Networth wo/ Home</th>
+                      <th>Home Owner</th>
+                      <th>Renter</th>
                   </tr>
               </thead>
                 <tbody>

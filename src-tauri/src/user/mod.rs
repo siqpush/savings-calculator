@@ -7,24 +7,28 @@ pub mod rates {
     impl Interest {
         pub fn new(inflation: Inflation) -> Self {
             let mut rng = thread_rng();
-            let mut values: Vec<f32> = vec![0.0; 100];
+            let mut values: Vec<f32> = vec![0.0; 101];
             for i in 0..100 {
                 match i {
-                    0..=29 => {
+                    0..=35 => {
                         values[i] = rng
-                            .gen_range((-0.075 + inflation.rates[i]/2.0)..(0.15 + inflation.rates[i]/2.0));
+                            .gen_range((-0.075 + inflation.rates[i]/2.0)..(0.20 + inflation.rates[i]/2.0));
                     }
-                    30..=49 => {
+                    36..=49 => {
                         values[i] = rng
-                            .gen_range((-0.05 + inflation.rates[i]/2.0)..(0.125 + inflation.rates[i]/2.0));
+                            .gen_range((-0.05 + inflation.rates[i]/2.0)..(0.175 + inflation.rates[i]/2.0));
                     }
                     50..=64 => {
                         values[i] = rng
-                            .gen_range((-0.025 + inflation.rates[i]/2.0)..(0.10 + inflation.rates[i]/2.0));
+                            .gen_range((-0.035 + inflation.rates[i]/2.0)..(0.15 + inflation.rates[i]/2.0));
+                    }
+                    65..=80 => {
+                        values[i] = rng
+                            .gen_range((-0.02 + inflation.rates[i]/2.0)..(0.125 + inflation.rates[i]/2.0));
                     }
                     _ => {
                         values[i] = rng
-                            .gen_range((-0.01 + inflation.rates[i]/2.0)..(0.075 + inflation.rates[i]/2.0));
+                            .gen_range((-0.005 + inflation.rates[i]/2.0)..(0.1 + inflation.rates[i]/2.0));
                     }
                 }
             }
@@ -120,6 +124,7 @@ pub mod saver {
         pub fn monthly_interest(&self) -> f32 {
             self.interest_rates[self.current_age as usize] / 12.0
         }
+        
         // reset rates to default or recalculate
         pub fn reset_rates(&mut self, recalculate: bool) {
             if recalculate {
@@ -127,6 +132,33 @@ pub mod saver {
                 self.interest_rates = Interest::new(Inflation::default()).rates;
             }
         }
+
+        fn reset_to_average_rates(&mut self, recalculate: bool) {
+            if recalculate {
+                for i in 0..1000 {
+                    if i == 0 {
+                        self.inflation_rates = Inflation::default().rates;
+                        self.interest_rates = Interest::new(Inflation::default()).rates;
+                    } else {
+                        self.inflation_rates.iter_mut().zip(Inflation::default().rates.iter()).for_each(|(x, &y)| {
+                            *x = *x + y;
+                        });
+                        self.interest_rates.iter_mut().zip(Interest::new(Inflation::default()).rates.iter()).for_each(|(x, &y)| {
+                            *x = *x + y;
+                        });
+                    }
+                }
+                self.inflation_rates.iter_mut().for_each(|x| {
+                    
+                    *x = *x / 1000.0
+                });
+                self.interest_rates.iter_mut().for_each(|x| {
+                    println!("{}", x);
+                    *x = *x / 1000.0
+                });
+            }
+        }
+
         // calculate liquid assets (total savings - (home value - mortgage debt))
         pub fn liquid_assets(&self) -> f32 {
             if self.total_savings - (self.home_value - self.mortgage_debt) < 0.0 {
